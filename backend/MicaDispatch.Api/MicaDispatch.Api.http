@@ -1,0 +1,11 @@
+@MicaDispatch.Api_HostAddress = http://localhost:5298
+
+GET {{MicaDispatch.Api_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+GET {{MicaDispatch.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
