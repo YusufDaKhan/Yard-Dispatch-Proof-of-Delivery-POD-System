@@ -422,5 +422,17 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
+# --- Project-Specific Additions (ASP.NET Secrets, Python Venv & Expo) ---
+appsettings.Development.json
+.env
+.env*.local
+.venv/
+venv/
+*.egg-info/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
