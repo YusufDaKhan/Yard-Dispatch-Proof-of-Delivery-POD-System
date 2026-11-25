@@ -1,11 +1,61 @@
 @MicaDispatch.Api_HostAddress = http://localhost:5298
 
-GET {{MicaDispatch.Api_HostAddress}}/openapi/v1.json
+### 1. Create a Vehicle
+POST {{MicaDispatch.Api_HostAddress}}/api/Vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "ND 123-456",
+  "driverName": "Thabo",
+  "maxLoadCapacity": 1500
+}
+
+### 2. Get All Vehicles
+GET {{MicaDispatch.Api_HostAddress}}/api/Vehicles
 Accept: application/json
 
-###
+### 3. Create a Delivery Ticket (uses vehicleId: 1)
+POST {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets
+Content-Type: application/json
 
-GET {{MicaDispatch.Api_HostAddress}}/weatherforecast/
+{
+  "deliveryAddress": "45 Nelson Mandela Dr, Ladysmith",
+  "customerInfo": "Mica Hardware Site B",
+  "vehicleId": 1,
+  "status": 0
+}
+
+### 4. Get All Delivery Tickets (verify DTO shape)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets
 Accept: application/json
 
-###
+### 5. Create a Ticket Item (uses deliveryTicketId: 1)
+POST {{MicaDispatch.Api_HostAddress}}/api/TicketItems
+Content-Type: application/json
+
+{
+  "itemName": "50kg Cement Bags",
+  "quantity": 10,
+  "weightKg": 500.00,
+  "deliveryTicketId": 1
+}
+
+### 6. Get All Ticket Items
+GET {{MicaDispatch.Api_HostAddress}}/api/TicketItems
+Accept: application/json
+
+### 7. Create a POD Record (uses deliveryTicketId: 1)
+POST {{MicaDispatch.Api_HostAddress}}/api/PodRecords
+Content-Type: application/json
+
+{
+  "proofOfDelivery": "Photo_001.jpg",
+  "receivedBy": "Sipho Dlamini",
+  "receivedSignature": "S.Dlamini",
+  "notes": "Left at main gate",
+  "deliveryTicketId": 1
+}
+
+### 8. Get All POD Records
+GET {{MicaDispatch.Api_HostAddress}}/api/PodRecords
+Accept: application/json
