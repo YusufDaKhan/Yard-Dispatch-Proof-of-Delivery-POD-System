@@ -20,6 +20,55 @@ public class DeliveryTicketsController : ControllerBase
         return await _context.DeliveryTickets.Select(x => TicketToDTO(x)).ToListAsync(); // Retrieves all delivery tickets from the database and converts them to DeliveryTicketDTO objects for the response
     }
 
+
+    //GET: api/DeliveryTicket/5/items
+    [HttpGet("{id}/items")]
+    public async Task<ActionResult<IEnumerable<TicketItemDTO>>> GetTicketItemsForDeliveryTicket(int id)
+    {
+        var deliveryTicket = await _context.DeliveryTickets.FindAsync(id); // Retrieves the delivery ticket with the specified ID from the database to check if it exists before retrieving its associated ticket items
+        if (deliveryTicket == null)
+        {
+            return NotFound();
+        }
+        var ticketItems = await _context.TicketItems // Retrieves all ticket items associated with the specified delivery ticket ID from the database and converts them to TicketItemDTO objects for the response
+            .Where(ti => ti.DeliveryTicketId == id)
+            .Select(ti => new TicketItemDTO
+            {
+                Id = ti.Id,
+                ItemName = ti.ItemName,
+                WeightKg = ti.WeightKg,
+                Quantity = ti.Quantity,
+                DeliveryTicketId = ti.DeliveryTicketId
+            })
+            .ToListAsync();
+        return ticketItems;
+    }
+
+
+    //GET: api/DeliveryTicket/5/Pod
+    [HttpGet("{id}/pod")]
+    public async Task<ActionResult<IEnumerable<PodRecordDTO>>> GetPodRecord(int id)
+    {
+        var deliveryTicket = await _context.DeliveryTickets.FindAsync(id); // Retrieves the delivery ticket with the specified ID from the database to check if it exists before retrieving its associated POD records
+        if (deliveryTicket == null)
+        {
+            return NotFound();
+        }
+        var podRecords = await _context.PodRecords // Retrieves all POD records associated with the specified delivery ticket ID from the database and converts them to PodRecordDTO objects for the response
+            .Where(pr => pr.DeliveryTicketId == id)
+            .Select(pr => new PodRecordDTO
+            {
+                Id = pr.Id,
+                DeliveryTicketId = pr.DeliveryTicketId,
+                ProofOfDelivery = pr.ProofOfDelivery,
+                ReceivedSignature = pr.ReceivedSignature,
+                ReceivedDate = pr.ReceivedDate
+            })
+            .ToListAsync();
+        return podRecords;
+
+    }
+
     // GET: api/DeliveryTicket/5
     [HttpGet("{id}")]
     public async Task<ActionResult<DeliveryTicketDTO>> GetDeliveryTicket(int id)
@@ -49,11 +98,46 @@ public class DeliveryTicketsController : ControllerBase
         {
             return NotFound();
         }
+
+        if (deliveryticket.Status == TicketStatus.Delivered || deliveryticket.Status == TicketStatus.Cancelled) // If the delivery ticket is already completed or cancelled, return a 400 Bad Request response with an error message
+        {
+            return BadRequest("Cannot update a completed or cancelled delivery ticket.");
+        }
+
+        if (deliveryticketDTO.Status == TicketStatus.Delivered)
+        {
+            var HasPod = await _context.PodRecords.FirstOrDefaultAsync(p => p.DeliveryTicketId == id); // Checks if a POD record exists for the delivery ticket before allowing it to be marked as completed
+            if (HasPod == null)
+            {
+                return BadRequest("Cannot mark the delivery ticket as delivered without a POD record.");
+            }
+        }
+
+        if (deliveryticketDTO.VehicleId != null)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(deliveryticketDTO.VehicleId.Value); // Retrieves the vehicle with the specified VehicleId from the database to check if it exists before associating it with the delivery ticket
+            if (vehicle == null)
+            {
+                return BadRequest($"Vehicle with ID {deliveryticketDTO.VehicleId.Value} does not exist."); // If the vehicle does not exist, return a 400 Bad Request response with an error message
+            }
+
+            var TotalWeight = await _context.TicketItems
+            .Where(ti => ti.DeliveryTicketId == id)
+            .SumAsync(ti => ti.WeightKg * ti.Quantity); // Calculates the total weight of all ticket items associated with the delivery ticket by multiplying the weight of each item by its quantity and summing the results
+
+            if (TotalWeight > vehicle.MaxLoadCapacity)
+            {
+                return BadRequest($"Total weight of ticket items ({TotalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg)."); // If the total weight exceeds the maximum load capacity of the vehicle, return a 400 Bad Request response with an error message
+            }
+        }
+
+
         // Update the properties of the delivery ticket with the values from the DTO
         deliveryticket.DeliveryAddress = deliveryticketDTO.DeliveryAddress;
         deliveryticket.CustomerInfo = deliveryticketDTO.CustomerInfo;
         deliveryticket.VehicleId = deliveryticketDTO.VehicleId;
         deliveryticket.Status = deliveryticketDTO.Status;
+
 
         // Mark the delivery ticket entity as modified in the DbContext to track changes for saving to the database
         try
@@ -80,8 +164,28 @@ public class DeliveryTicketsController : ControllerBase
             VehicleId = deliveryticketDTO.VehicleId,
             Status = deliveryticketDTO.Status
         };
+
+        if (deliveryticket.Status == TicketStatus.Delivered || deliveryticket.Status == TicketStatus.Cancelled)
+        {
+            return BadRequest("Cannot create a delivery ticket with a status of 'Delivered' or 'Cancelled'."); // If the status of the new delivery ticket is set to 'Delivered' or 'Cancelled', return a 400 Bad Request response with an error message
+        }
+
+        if (deliveryticket.VehicleId != null)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(deliveryticket.VehicleId.Value); // Retrieves the vehicle with the specified VehicleId from the database to check if it exists before associating it with the new delivery ticket
+            if (vehicle == null)
+            {
+                return BadRequest($"Vehicle with ID {deliveryticket.VehicleId.Value} does not exist."); // If the vehicle does not exist, return a 400 Bad Request response with an error message
+            }
+        }
+
         _context.DeliveryTickets.Add(deliveryticket);
         await _context.SaveChangesAsync();
+
+
+
+        deliveryticket.DispatchOrderNumber = $"DO-{deliveryticket.Id:D6}"; // Generates a dispatch order number for the newly created delivery ticket based on its ID and assigns it to the DispatchOrderNumber property
+        await _context.SaveChangesAsync(); // Saves the changes to the database, including the generated dispatch order number
 
         return CreatedAtAction(nameof(GetDeliveryTicket), new { id = deliveryticket.Id }, TicketToDTO(deliveryticket)); // Returns a 201 Created response with the location of the newly created delivery ticket and its corresponding DeliveryTicketDTO object in the response body
     }

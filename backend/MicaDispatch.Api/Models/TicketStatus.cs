@@ -2,7 +2,7 @@
 {
     public enum TicketStatus
     {
-        Created, Assigned, InTransit, Delivered, Completed, Delayed, Cancelled, Returned, FailedDelivery, Rescheduled, OnHold, PartiallyDelivered
+        Created, Assigned, InTransit, Delivered, Cancelled, Returned, Rescheduled
     }
 }
 

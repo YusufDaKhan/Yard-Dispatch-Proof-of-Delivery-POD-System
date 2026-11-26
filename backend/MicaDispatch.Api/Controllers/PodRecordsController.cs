@@ -75,6 +75,20 @@ public class PodRecordsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PodRecordDTO>> PostPodRecord(PodRecordDTO podrecordDTO)
     {
+
+
+        var deliveryTicket = await _context.DeliveryTickets.FindAsync(podrecordDTO.DeliveryTicketId); // Check if the associated delivery ticket exists and is not cancelled before creating a POD record
+        if (deliveryTicket == null || deliveryTicket.Status == TicketStatus.Cancelled)
+        {
+            return BadRequest($"Delivery ticket with ID {podrecordDTO.DeliveryTicketId} does not exist or is cancelled.");
+        }
+
+        var podExists = await _context.PodRecords.AnyAsync(p => p.DeliveryTicketId == podrecordDTO.DeliveryTicketId); // Check if a POD record already exists for the delivery ticket before creating a new one
+        if (podExists)
+        {
+            return BadRequest($"POD record for delivery ticket with ID {podrecordDTO.DeliveryTicketId} already exists.");
+        }
+
         var podrecord = new PodRecord
         {
             ProofOfDelivery = podrecordDTO.ProofOfDelivery,

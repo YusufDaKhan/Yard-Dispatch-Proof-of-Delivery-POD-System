@@ -50,6 +50,30 @@ public class TicketItemsController : ControllerBase
             return NotFound();
         }
 
+        // Check if the associated delivery ticket exists and validate the total weight against the vehicle's maximum load capacity
+        var deliveryTicket = await _context.DeliveryTickets.FindAsync(ticketitemDTO.DeliveryTicketId);
+        if (deliveryTicket == null)
+        {
+            return BadRequest("Invalid delivery ticket ID.");
+        }
+
+        if (deliveryTicket.VehicleId != null)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(deliveryTicket.VehicleId);
+            if (vehicle == null)
+            {
+                return BadRequest($"Vehicle with ID {deliveryTicket.VehicleId} does not exist.");
+            }
+            var totalWeight = await _context.TicketItems
+                .Where(ti => ti.DeliveryTicketId == ticketitemDTO.DeliveryTicketId && ti.Id != ticketitemDTO.Id)
+                .SumAsync(ti => ti.WeightKg * ti.Quantity);
+            totalWeight += ticketitemDTO.WeightKg * ticketitemDTO.Quantity;
+            if (totalWeight > vehicle.MaxLoadCapacity)
+            {
+                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg).");
+            }
+        }
+
         // Update the properties of the ticket item with the values from the DTO
         ticketitem.ItemName = ticketitemDTO.ItemName;
         ticketitem.Quantity = ticketitemDTO.Quantity;
@@ -80,6 +104,31 @@ public class TicketItemsController : ControllerBase
             WeightKg = ticketitemDTO.WeightKg,
             DeliveryTicketId = ticketitemDTO.DeliveryTicketId
         };
+
+        // Check if the associated delivery ticket exists and validate the total weight against the vehicle's maximum load capacity
+        var deliveryTicket = await _context.DeliveryTickets.FindAsync(ticketitemDTO.DeliveryTicketId);
+        if (deliveryTicket == null)
+        {
+            return BadRequest("Invalid delivery ticket ID.");
+        }
+
+        if (deliveryTicket.VehicleId != null)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(deliveryTicket.VehicleId);
+            if (vehicle == null)
+            {
+                return BadRequest($"Vehicle with ID {deliveryTicket.VehicleId} does not exist.");
+            }
+            var totalWeight = await _context.TicketItems
+                .Where(ti => ti.DeliveryTicketId == ticketitemDTO.DeliveryTicketId)
+                .SumAsync(ti => ti.WeightKg * ti.Quantity);
+            totalWeight += ticketitemDTO.WeightKg * ticketitemDTO.Quantity;
+            if (totalWeight > vehicle.MaxLoadCapacity)
+            {
+                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg).");
+            }
+        }
+
         _context.TicketItems.Add(ticketitem);
         await _context.SaveChangesAsync();
 

@@ -1,6 +1,6 @@
 @MicaDispatch.Api_HostAddress = http://localhost:5298
 
-### 1. Create a Vehicle
+### 1. Create a Vehicle (MaxLoadCapacity: 1500 kg)
 POST {{MicaDispatch.Api_HostAddress}}/api/Vehicles
 Content-Type: application/json
 
@@ -14,7 +14,7 @@ Content-Type: application/json
 GET {{MicaDispatch.Api_HostAddress}}/api/Vehicles
 Accept: application/json
 
-### 3. Create a Delivery Ticket (uses vehicleId: 1)
+### 3. Create a Delivery Ticket (Verify auto-generated DO-000001)
 POST {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets
 Content-Type: application/json
 
@@ -25,26 +25,64 @@ Content-Type: application/json
   "status": 0
 }
 
-### 4. Get All Delivery Tickets (verify DTO shape)
+### 4. Get All Delivery Tickets
 GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets
 Accept: application/json
 
-### 5. Create a Ticket Item (uses deliveryTicketId: 1)
+### 5. Create a Valid Ticket Item (10 x 50kg = 500kg / 1500kg)
 POST {{MicaDispatch.Api_HostAddress}}/api/TicketItems
 Content-Type: application/json
 
 {
   "itemName": "50kg Cement Bags",
   "quantity": 10,
-  "weightKg": 500.00,
+  "weightKg": 50.00,
   "deliveryTicketId": 1
 }
 
-### 6. Get All Ticket Items
-GET {{MicaDispatch.Api_HostAddress}}/api/TicketItems
+### 6. Edge Case: Overweight Ticket Item (Should return 400 BadRequest)
+POST {{MicaDispatch.Api_HostAddress}}/api/TicketItems
+Content-Type: application/json
+
+{
+  "itemName": "50kg Cement Bags",
+  "quantity": 25,
+  "weightKg": 50.00,
+  "deliveryTicketId": 1
+}
+
+### 7. Edge Case: Invalid Foreign Keys (Should return 400 BadRequest)
+POST {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets
+Content-Type: application/json
+
+{
+  "deliveryAddress": "12 Main Rd, Durban",
+  "customerInfo": "Invalid Vehicle Test",
+  "vehicleId": 9999,
+  "status": 0
+}
+
+### 8. Nested Lookup: Get Items for Ticket 1 (Should return 200 OK)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/1/items
 Accept: application/json
 
-### 7. Create a POD Record (uses deliveryTicketId: 1)
+### 9. Nested Lookup: Missing Ticket (Should return 404 NotFound)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/9999/items
+Accept: application/json
+
+### 10. Edge Case: Deliver Ticket WITHOUT POD (Should return 400 BadRequest)
+PUT {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "deliveryAddress": "45 Nelson Mandela Dr, Ladysmith",
+  "customerInfo": "Mica Hardware Site B",
+  "vehicleId": 1,
+  "status": 3
+}
+
+### 11. Create a POD Record for Ticket 1
 POST {{MicaDispatch.Api_HostAddress}}/api/PodRecords
 Content-Type: application/json
 
@@ -53,9 +91,33 @@ Content-Type: application/json
   "receivedBy": "Sipho Dlamini",
   "receivedSignature": "S.Dlamini",
   "notes": "Left at main gate",
-  "deliveryTicketId": 1
+  "deliveryTicketId": 3
 }
 
-### 8. Get All POD Records
-GET {{MicaDispatch.Api_HostAddress}}/api/PodRecords
+### 12. Nested Lookup: Get POD for Ticket 1 (Should return 200 OK)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/1/pod
 Accept: application/json
+
+### 13. Deliver Ticket WITH POD (Should return 204 NoContent)
+PUT {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "deliveryAddress": "45 Nelson Mandela Dr, Ladysmith",
+  "customerInfo": "Mica Hardware Site B",
+  "vehicleId": 1,
+  "status": 3
+}
+
+### 14. Edge Case: Modify Already-Delivered Ticket (Should return 400 BadRequest)
+PUT {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "deliveryAddress": "Updated Address After Delivery",
+  "customerInfo": "Mica Hardware Site B",
+  "vehicleId": 1,
+  "status": 3
+}
