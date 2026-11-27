@@ -15,9 +15,26 @@ public class DeliveryTicketsController : ControllerBase
 
     // GET: api/DeliveryTicket
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DeliveryTicketDTO>>> GetDeliveryTicket()
+    public async Task<ActionResult<IEnumerable<DeliveryTicketDTO>>> GetDeliveryTicket([FromQuery] TicketStatus? status = null, [FromQuery] int? vehicleId = null, [FromQuery] string? search = null) // Retrieves a list of delivery tickets from the database, optionally filtered by status, vehicle ID, and search term, and returns them as a list of DeliveryTicketDTO objects in descending order of their IDs
     {
-        return await _context.DeliveryTickets.Select(x => TicketToDTO(x)).ToListAsync(); // Retrieves all delivery tickets from the database and converts them to DeliveryTicketDTO objects for the response
+        var query = _context.DeliveryTickets.AsQueryable(); // Initializes a queryable collection of delivery tickets from the database context to allow for filtering based on the provided query parameters
+
+        if (status.HasValue)
+        {
+            query = query.Where(dt => dt.Status == status.Value);
+        }
+
+        if (vehicleId.HasValue)
+        {
+            query = query.Where(dt => dt.VehicleId == vehicleId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(dt => dt.DeliveryAddress.Contains(search) || dt.CustomerInfo.Contains(search) || dt.DispatchOrderNumber.Contains(search.Trim()));
+        }
+
+        return await query.OrderByDescending(dt => dt.Id).Select(x => TicketToDTO(x)).ToListAsync(); // Retrieves a list of delivery tickets from the database, optionally filtered by status, vehicle ID, and search term, and returns them as a list of DeliveryTicketDTO objects in descending order of their IDs
     }
 
 
@@ -125,9 +142,9 @@ public class DeliveryTicketsController : ControllerBase
             .Where(ti => ti.DeliveryTicketId == id)
             .SumAsync(ti => ti.WeightKg * ti.Quantity); // Calculates the total weight of all ticket items associated with the delivery ticket by multiplying the weight of each item by its quantity and summing the results
 
-            if (TotalWeight > vehicle.MaxLoadCapacity)
+            if (TotalWeight > vehicle.MaxLoadCapacityKg)
             {
-                return BadRequest($"Total weight of ticket items ({TotalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg)."); // If the total weight exceeds the maximum load capacity of the vehicle, return a 400 Bad Request response with an error message
+                return BadRequest($"Total weight of ticket items ({TotalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacityKg} kg)."); // If the total weight exceeds the maximum load capacity of the vehicle, return a 400 Bad Request response with an error message
             }
         }
 

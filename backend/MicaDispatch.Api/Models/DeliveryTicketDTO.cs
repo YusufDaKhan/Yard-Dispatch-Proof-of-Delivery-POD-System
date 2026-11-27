@@ -3,7 +3,7 @@
 
 namespace MicaDispatch.Api.Models
 {
-    public class DeliveryTicketDTO  
+    public class DeliveryTicketDTO
     {
         public int Id { get; set; }
         [MaxLength(100)]
@@ -15,6 +15,8 @@ namespace MicaDispatch.Api.Models
         public int? VehicleId { get; set; } // Foreign key to the Vehicle entity}
 
         public TicketStatus Status { get; set; } = TicketStatus.Created; // Status of the delivery ticket
+
+        public string DispatchOrderNumber { get; set; } = string.Empty; // Dispatch order number associated with the delivery ticket
 
     }
 }

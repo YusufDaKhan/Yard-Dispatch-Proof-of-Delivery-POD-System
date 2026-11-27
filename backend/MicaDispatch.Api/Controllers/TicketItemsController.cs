@@ -68,9 +68,9 @@ public class TicketItemsController : ControllerBase
                 .Where(ti => ti.DeliveryTicketId == ticketitemDTO.DeliveryTicketId && ti.Id != ticketitemDTO.Id)
                 .SumAsync(ti => ti.WeightKg * ti.Quantity);
             totalWeight += ticketitemDTO.WeightKg * ticketitemDTO.Quantity;
-            if (totalWeight > vehicle.MaxLoadCapacity)
+            if (totalWeight > vehicle.MaxLoadCapacityKg)
             {
-                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg).");
+                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacityKg} kg).");
             }
         }
 
@@ -123,9 +123,9 @@ public class TicketItemsController : ControllerBase
                 .Where(ti => ti.DeliveryTicketId == ticketitemDTO.DeliveryTicketId)
                 .SumAsync(ti => ti.WeightKg * ti.Quantity);
             totalWeight += ticketitemDTO.WeightKg * ticketitemDTO.Quantity;
-            if (totalWeight > vehicle.MaxLoadCapacity)
+            if (totalWeight > vehicle.MaxLoadCapacityKg)
             {
-                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacity} kg).");
+                return BadRequest($"Total weight of ticket items ({totalWeight} kg) exceeds the maximum load capacity of the vehicle ({vehicle.MaxLoadCapacityKg} kg).");
             }
         }
 

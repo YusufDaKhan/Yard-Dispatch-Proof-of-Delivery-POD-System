@@ -36,6 +36,44 @@ public class VehiclesController : ControllerBase
         return vehicle;
     }
 
+    // GET: api/Vehicle/Manifest/5
+    [HttpGet("{id}/manifest")]
+    public async Task<ActionResult<VehicleManifestDTO>> GetVehicleManifest(int id)
+    {
+        var vehicle = await _context.Vehicles.FindAsync(id);
+
+        if (vehicle == null)
+        {
+            return NotFound();
+        }
+
+        var activeTickets = await _context.DeliveryTickets.Where(dt => dt.VehicleId == id && dt.Status != TicketStatus.Delivered && dt.Status != TicketStatus.Cancelled && dt.Status != TicketStatus.Returned).OrderByDescending(dt => dt.Id).ToListAsync();
+        var activeTicketIds = activeTickets.Select(dt => dt.Id).ToList();
+        var activeAssignedWeightKg = await _context.TicketItems.Where(item => activeTicketIds.Contains(item.DeliveryTicketId)).SumAsync(item => (decimal)(item.Quantity * item.WeightKg));
+
+        var activeTicketDTOs = activeTickets.Select(dt => new DeliveryTicketDTO
+        {
+            Id = dt.Id,
+            VehicleId = dt.VehicleId,
+            Status = dt.Status,
+            DeliveryAddress = dt.DeliveryAddress,
+            CustomerInfo = dt.CustomerInfo,
+            DispatchOrderNumber = dt.DispatchOrderNumber
+        });
+
+        return Ok(new VehicleManifestDTO
+        {
+            VehicleId = vehicle.Id,
+            LicensePlate = vehicle.LicensePlate,
+            DriverName = vehicle.DriverName,
+            MaxLoadCapacityKg = vehicle.MaxLoadCapacityKg,
+            ActiveAssignedWeightKg = activeAssignedWeightKg,
+            RemainingCapacityKg = vehicle.MaxLoadCapacityKg - activeAssignedWeightKg,
+            ActiveTicketCount = activeTickets.Count,
+            ActiveTickets = activeTicketDTOs.ToList()
+        });
+    }
+
     // PUT: api/Vehicle/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]

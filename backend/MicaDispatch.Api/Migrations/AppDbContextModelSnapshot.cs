@@ -16,7 +16,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125125007_InitialCreate";
+    public override string LastMigrationId => "20261127140003_RenameMaxLoadCapacityToKg";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -153,7 +153,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(20)
                     .HasColumnType("nvarchar(20)");
 
-                b.Property<decimal>("MaxLoadCapacity")
+                b.Property<decimal>("MaxLoadCapacityKg")
                     .HasPrecision(18, 2)
                     .HasColumnType("decimal(18,2)");
 

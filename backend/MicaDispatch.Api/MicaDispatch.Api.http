@@ -121,3 +121,44 @@ Content-Type: application/json
   "vehicleId": 1,
   "status": 3
 }
+
+### 15. Filter Delivery Tickets by Status (0 = Created, 3 = Delivered)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?status=3
+Accept: application/json
+
+### 16. Filter Delivery Tickets by VehicleId
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?vehicleId=1
+Accept: application/json
+
+### 17. Search Delivery Tickets by Address, Customer, or Order Number
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?search=Ladysmith
+Accept: application/json
+
+### 18. Combined Filter: Vehicle + Status + Descending Order Check
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?vehicleId=1&status=0
+Accept: application/json
+
+### 19. Filter with No Matches (Should return 200 OK with empty array [])
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?search=NonExistentSite999
+Accept: application/json
+
+### 20. Get Vehicle Manifest & Load Summary (Valid Vehicle)
+GET {{MicaDispatch.Api_HostAddress}}/api/Vehicles/1/manifest
+Accept: application/json
+
+### 21. Get Vehicle Manifest for Non-Existent Vehicle (Should return 404 Not Found)
+GET {{MicaDispatch.Api_HostAddress}}/api/Vehicles/999/manifest
+Accept: application/json
+
+### 22. Verify ProblemDetails on Invalid Route (Should return 404 application/problem+json)
+GET {{MicaDispatch.Api_HostAddress}}/api/NonExistentRoute
+Accept: application/json
+
+### 23. Verify ProblemDetails on Invalid Query Enum (Should return 400 application/problem+json)
+GET {{MicaDispatch.Api_HostAddress}}/api/DeliveryTickets?status=InvalidStatus
+Accept: application/json
+
+### 24. Verify CORS Headers for Allowed Frontend Origin (Should include Access-Control-Allow-Origin)
+GET {{MicaDispatch.Api_HostAddress}}/api/Vehicles
+Origin: http://localhost:8081
+Accept: application/json
