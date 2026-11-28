@@ -436,3 +436,5 @@ expo-env.d.ts
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+frontend/.env
